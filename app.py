@@ -1,31 +1,32 @@
-from flask import Flask, render_template, request, redirect, url_for
+
+from flask import Flask, render_template, request, redirect
+from db import get_connection
 
 app = Flask(__name__)
 
-tarefas = []
-
 @app.route('/')
 def index():
-    return render_template('index.html', tarefas=tarefas)
+    
+    return render_template('index.html')
 
-@app.route('/add', methods=['POST'])
-def add():
-    titulo = request.form['titulo']
-    if titulo:
-        tarefas.append({'titulo': titulo, 'feito': False})
-    return redirect(url_for('index'))
+@app.route('/inserir', methods=['POST'])
+def inserir():
+    
+    nome = request.form.get('nome')
 
-@app.route('/concluir/<int:indice>')
-def concluir(indice):
-    if 0 <= indice < len(tarefas):
-        tarefas[indice]['feito'] = not tarefas[indice]['feito']
-    return redirect(url_for('index'))
+    if not nome:
+        return "Erro: nome não pode estar vazio", 400
 
-@app.route('/remover/<int:indice>')
-def remover(indice):
-    if 0 <= indice < len(tarefas):
-        tarefas.pop(indice)
-    return redirect(url_for('index'))
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO clientes (nome) VALUES (%s)", (nome,))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return redirect('/')
+    except Exception as e:
+        return f"Erro ao inserir no banco: {str(e)}", 500
 
 if __name__ == '__main__':
     app.run(debug=True)
