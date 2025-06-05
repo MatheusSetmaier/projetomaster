@@ -1,37 +1,32 @@
-from flask import Flask, render_template, request, redirect
-import mysql.connector
+from flask import Flask, render_template, request, redirect, url_for
 
 app = Flask(__name__)
 
-# Configuração do banco de dados
-db_config = {
-    'host': 'localhost',
-    'user': 'master',
-    'password': 'Teste@Master',
-    'database': 'banco_matheus'
-}
+# Lista em memória para armazenar tarefas
+tarefas = []
 
-# Página inicial com o formulário
 @app.route('/')
-def formulario():
-    return render_template('cadastro.html')
+def index():
+    return render_template('index.html', tarefas=tarefas)
 
-# Rota para tratar a inserção
-@app.route('/inserir', methods=['POST'])
-def inserir():
-    nome = request.form['nome']
+@app.route('/add', methods=['POST'])
+def add():
+    titulo = request.form['titulo']
+    if titulo:
+        tarefas.append({'titulo': titulo, 'feito': False})
+    return redirect(url_for('index'))
 
-    conn = mysql.connector.connect(**db_config)
-    cursor = conn.cursor()
+@app.route('/concluir/<int:indice>')
+def concluir(indice):
+    if 0 <= indice < len(tarefas):
+        tarefas[indice]['feito'] = not tarefas[indice]['feito']
+    return redirect(url_for('index'))
 
-    query = "INSERT INTO clientes (nome) VALUES (%s)"
-    cursor.execute(query, (nome,))
-
-    conn.commit()
-    cursor.close()
-    conn.close()
-
-    return redirect('/')
+@app.route('/remover/<int:indice>')
+def remover(indice):
+    if 0 <= indice < len(tarefas):
+        tarefas.pop(indice)
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     app.run(debug=True)
